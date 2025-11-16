@@ -6,12 +6,7 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "migrate": "node src/scripts/migrate.js",
-    "migrate:knex": "knex --knexfile ./knexfile.cjs migrate:latest",
-    "migrate:rollback": "knex --knexfile ./knexfile.cjs migrate:rollback",
-    "seed": "knex --knexfile ./knexfile.cjs seed:run",
-    "db:apply": "node src/scripts/applyDb.js"
+    "dev": "nodemon src/server.js"
   },
   "engines": {
     "node": ">=14"
@@ -20,12 +15,9 @@
     "cors": "^2.8.5",
     "dotenv": "^16.0.0",
     "express": "^4.18.2",
-    "helmet": "^7.0.0",
-    "morgan": "^1.10.0",
     "mysql2": "^3.2.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.22",
-    "knex": "^2.5.1"
+    "nodemon": "^2.0.22"
   }
 }
