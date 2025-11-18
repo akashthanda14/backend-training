@@ -12,8 +12,8 @@ export async function getUserById(userId) {
 
 export async function createUser(username, email) {
   const result = await query(
-    'INSERT INTO users (username, email) VALUES (?, ?)',
-    [username, email]
+    'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
+    [username, email, 'temp_password'] // This should be updated to require password
   );
   return result.insertId;
 }
