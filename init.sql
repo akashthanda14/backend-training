@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS users (
   INDEX idx_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+
+
 -- Insert sample users (passwords are hashed for: password123)
 INSERT INTO users (username, email, password, created_at) VALUES
   ('john_doe', 'john.doe@example.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RXSBx8dsu', '2025-11-01 10:00:00'),

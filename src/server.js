@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import usersRouter from './routes/userRoutes.js';
 import authRouter from './routes/authRoutes.js';
+import adminRouter from './routes/adminRoutes.js';
 import { query } from './db/db.js';
 
 dotenv.config();
@@ -25,6 +26,7 @@ app.get('/health', async (req, res) => {
 
 app.use('/users', usersRouter); //. http://localhost:3000/users
 app.use('/auth', authRouter); // http://localhost:3000/auth
+app.use('/admin', adminRouter); // http://localhost:3000/admin
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

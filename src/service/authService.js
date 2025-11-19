@@ -148,33 +148,9 @@ function generateToken(userId) {
   );
 }
 
-/**
- * Refresh token
- */
-async function refreshToken(oldToken) {
-  try {
-    const decoded = jwt.verify(oldToken, JWT_SECRET);
-    const user = await authModel.getUserById(decoded.userId);
-    
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    const newToken = generateToken(user.id);
-    return {
-      user,
-      token: newToken
-    };
-  } catch (error) {
-    console.error('Service error refreshing token:', error.message);
-    throw error;
-  }
-}
-
 export default {
   registerUser,
   loginUser,
   verifyToken,
-  refreshToken,
   generateToken
 };

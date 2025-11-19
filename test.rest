@@ -1,0 +1,244 @@
+### REST Client Testing File
+### Use this file with VS Code REST Client extension or similar tools
+
+### Variables
+@baseUrl = http://localhost:3000
+@adminEmail = admin@company.com
+@adminPassword = AdminPassword123!
+
+### =====================================================
+### HEALTH CHECK
+### =====================================================
+
+### Health Check
+GET {{baseUrl}}/health
+
+### =====================================================
+### ADMIN AUTHENTICATION
+### =====================================================
+
+### Admin Login
+POST {{baseUrl}}/admin/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### Admin Login - Invalid Credentials
+POST {{baseUrl}}/admin/login
+Content-Type: application/json
+
+{
+  "email": "wrong@email.com",
+  "password": "wrongpassword"
+}
+
+### Admin Profile (Replace TOKEN with actual token from login response)
+GET {{baseUrl}}/admin/profile
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBjb21wYW55LmNvbSIsInJvbGUiOiJhZG1pbiIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc2MzU2ODM5MywiZXhwIjoxNzYzNjU0NzkzLCJpc3MiOiJhZG1pbi1hdXRoLXNlcnZpY2UifQ.TkHb-qCHR5EWOKvGsX5sOtdMV-DXnGzFoqrXEjMwECg
+
+### Admin System Status (Replace TOKEN with actual token from login response)
+GET {{baseUrl}}/admin/system/status
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBjb21wYW55LmNvbSIsInJvbGUiOiJhZG1pbiIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc2MzU2ODM5MywiZXhwIjoxNzYzNjU0NzkzLCJpc3MiOiJhZG1pbi1hdXRoLXNlcnZpY2UifQ.TkHb-qCHR5EWOKvGsX5sOtdMV-DXnGzFoqrXEjMwECg
+
+### =====================================================
+### USER AUTHENTICATION
+### =====================================================
+
+### User Signup
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "email": "testuser@example.com",
+  "password": "TestPassword123!"
+}
+
+### User Signup - Duplicate Email
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "username": "testuser2",
+  "email": "testuser@example.com",
+  "password": "TestPassword123!"
+}
+
+### User Signin
+POST {{baseUrl}}/auth/signin
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "password": "TestPassword123!"
+}
+
+### User Signin - Invalid Credentials
+POST {{baseUrl}}/auth/signin
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "password": "wrongpassword"
+}
+
+### User Profile (Replace TOKEN with actual token from signin response)
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer YOUR_USER_TOKEN_HERE
+
+### =====================================================
+### USER MANAGEMENT (ADMIN ONLY)
+### =====================================================
+
+### Get All Users (Admin Only)
+GET {{baseUrl}}/users
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
+
+### Get All Users - No Admin Token (Should Fail)
+GET {{baseUrl}}/users
+
+### Get User By ID (Admin Only)
+GET {{baseUrl}}/users/1
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
+
+### Get User By ID - Invalid ID (Admin Only)
+GET {{baseUrl}}/users/999
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
+
+### Create New User (Admin Only)
+POST {{baseUrl}}/users
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "email": "newuser@example.com",
+  "password": "NewUserPassword123!"
+}
+
+### Create User - Missing Fields (Admin Only)
+POST {{baseUrl}}/users
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "username": "incomplete"
+}
+
+### Create User - No Admin Token (Should Fail)
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "username": "unauthorized",
+  "email": "unauthorized@example.com",
+  "password": "Password123!"
+}
+
+### Update User (Admin Only) - Replace :id with actual user ID
+PUT {{baseUrl}}/users/1
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "username": "updateduser",
+  "email": "updated@example.com"
+}
+
+### Update User - Invalid ID (Admin Only)
+PUT {{baseUrl}}/users/999
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "username": "nonexistent"
+}
+
+### Update User - No Admin Token (Should Fail)
+PUT {{baseUrl}}/users/1
+Content-Type: application/json
+
+{
+  "username": "unauthorized"
+}
+
+### Delete User (Admin Only) - Replace :id with actual user ID
+DELETE {{baseUrl}}/users/1
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
+
+### Delete User - Invalid ID (Admin Only)
+DELETE {{baseUrl}}/users/999
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
+
+### Delete User - No Admin Token (Should Fail)
+DELETE {{baseUrl}}/users/1
+
+### =====================================================
+### ERROR TESTING
+### =====================================================
+
+### Invalid Endpoint
+GET {{baseUrl}}/invalid/endpoint
+
+### Invalid HTTP Method
+PATCH {{baseUrl}}/users
+
+### Malformed JSON
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "username": "test",
+  "email": "test@test.com"
+  "password": "missing comma above"
+}
+
+### =====================================================
+### TESTING INSTRUCTIONS
+### =====================================================
+
+###
+### 1. Start your server: node src/server.js
+### 2. Make sure your .env file has the correct admin credentials
+### 3. First, test the admin login to get an admin token
+### 4. Copy the token from the admin login response
+### 5. Replace "YOUR_ADMIN_TOKEN_HERE" with the actual token
+### 6. Test user signup/signin to get user tokens
+### 7. Replace "YOUR_USER_TOKEN_HERE" with actual user tokens
+### 8. Run each test and verify the responses
+###
+### Expected Responses:
+### - 200: Success
+### - 201: Created (for signup, user creation)
+### - 400: Bad Request (missing fields, validation errors)
+### - 401: Unauthorized (wrong credentials, missing tokens)
+### - 403: Forbidden (invalid/expired tokens)
+### - 404: Not Found (invalid user IDs)
+### - 500: Internal Server Error
+###
+
+### =====================================================
+### SAMPLE WORKFLOW
+### =====================================================
+
+### Step 1: Admin Login (Copy token from response)
+# POST {{baseUrl}}/admin/login
+
+### Step 2: Test Admin-Protected Endpoints
+# GET {{baseUrl}}/admin/profile (with admin token)
+# GET {{baseUrl}}/users (with admin token)
+
+### Step 3: User Authentication
+# POST {{baseUrl}}/auth/signup (create new user)
+# POST {{baseUrl}}/auth/signin (login user, copy token)
+
+### Step 4: Test User-Protected Endpoints  
+# GET {{baseUrl}}/auth/profile (with user token)
+
+### Step 5: Test Admin User Management
+# POST {{baseUrl}}/users (create user as admin)
+# PUT {{baseUrl}}/users/ID (update user as admin)
+# DELETE {{baseUrl}}/users/ID (delete user as admin)

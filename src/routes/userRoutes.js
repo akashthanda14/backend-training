@@ -1,9 +1,3 @@
-/**
- * User Routes
- * 
- * Defines all the endpoints for user operations
- */
-
 import express from 'express';
 import { 
   getUsers, 
@@ -12,22 +6,23 @@ import {
   updateUser, 
   deleteUser 
 } from '../controller/userController.js';
+import { authenticateAdmin } from '../middleware/adminMiddleware.js';
 
 const router = express.Router();
 
-// GET /users - Get all users
-router.get('/', getUsers);
+// GET /users - Get all users (Admin only)
+router.get('/', authenticateAdmin, getUsers);
 
-// GET /users/:id - Get a specific user by ID
-router.get('/:id', getUserById);
+// GET /users/:id - Get a specific user by ID (Admin only)
+router.get('/:id', authenticateAdmin, getUserById);
 
-// POST /users - Create a new user
-router.post('/', createUser);
+// POST /users - Create a new user (Admin only)
+router.post('/', authenticateAdmin, createUser);
 
-// PUT /users/:id - Update a user
-router.put('/:id', updateUser);
+// PUT /users/:id - Update a user (Admin only)
+router.put('/:id', authenticateAdmin, updateUser);
 
-// DELETE /users/:id - Delete a user
-router.delete('/:id', deleteUser);
+// DELETE /users/:id - Delete a user (Admin only)
+router.delete('/:id', authenticateAdmin, deleteUser);
 
 export default router;
