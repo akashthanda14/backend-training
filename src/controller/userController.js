@@ -81,17 +81,17 @@ export async function getUserById(req, res) {
  */
 export async function createUser(req, res) {
   try {
-    const { username, email } = req.body;
+    const { username, email, password, role } = req.body;
 
     // Validate required fields
-    if (!username || !email) {
+    if (!username || !email || !password) {
       return res.status(400).json({
         success: false,
-        error: 'Username and email are required'
+        error: 'Username, email, and password are required'
       });
     }
 
-    const newUser = await userService.createUser({ username, email });
+    const newUser = await userService.createUser({ username, email, password, role });
 
     res.status(201).json({
       success: true,

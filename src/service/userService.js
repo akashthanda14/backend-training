@@ -6,6 +6,8 @@
  */
 
 import * as userModel from '../model/userModel.js';
+import bcrypt from 'bcryptjs';
+import { DEFAULT_ROLE, ROLES } from '../constants/roles.js';
 
 /**
  * List all users
@@ -42,8 +44,8 @@ async function getUserById(userId) {
 async function createUser(userData) {
   try {
     // Validate required fields
-    if (!userData.username || !userData.email) {
-      throw new Error('Username and email are required');
+    if (!userData.username || !userData.email || !userData.password) {
+      throw new Error('Username, email, and password are required');
     }
 
     // Validate email format
@@ -58,7 +60,17 @@ async function createUser(userData) {
       throw new Error('Username can only contain letters, numbers, and underscores');
     }
 
-    const userId = await userModel.createUser(userData.username, userData.email);
+    // Validate role if provided
+    const role = userData.role || DEFAULT_ROLE;
+    if (!Object.values(ROLES).includes(role)) {
+      throw new Error('Invalid role specified');
+    }
+
+    // Hash password
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
+
+    const userId = await userModel.createUser(userData.username, userData.email, hashedPassword, role);
     const newUser = await userModel.getUserById(userId);
     return newUser;
   } catch (error) {
@@ -94,11 +106,18 @@ async function updateUser(userId, userData) {
       }
     }
 
+    // Validate role if provided
+    if (userData.role && !Object.values(ROLES).includes(userData.role)) {
+      throw new Error('Invalid role specified');
+    }
+
     // Use existing values if not provided
     const username = userData.username || existingUser.username;
     const email = userData.email || existingUser.email;
+    const role = userData.role || existingUser.role;
 
-    const affectedRows = await userModel.updateUser(userId, username, email);
+    const updateData = { username, email, role };
+    const affectedRows = await userModel.updateUser(userId, updateData);
     
     if (affectedRows === 0) {
       throw new Error('User update failed');

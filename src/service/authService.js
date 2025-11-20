@@ -68,17 +68,17 @@ async function registerUser(userData) {
  */
 async function loginUser(credentials) {
   try {
-    const { login, password } = credentials; // login can be email or username
+    const { email, password } = credentials;
 
     // Validate required fields
-    if (!login || !password) {
-      throw new Error('Email/username and password are required');
+    if (!email || !password) {
+      throw new Error('Email and password are required');
     }
 
     // Find user by email or username
-    let user = await authModel.getUserByEmail(login);
+    let user = await authModel.getUserByEmail(email);
     if (!user) {
-      user = await authModel.getUserByUsername(login);
+      user = await authModel.getUserByUsername(email);
     }
 
     if (!user) {
@@ -101,6 +101,7 @@ async function loginUser(credentials) {
       id: user.id,
       username: user.username,
       email: user.email,
+      role: user.role,
       created_at: user.created_at
     };
 

@@ -131,7 +131,7 @@ async function testUserSignin() {
   logTest('POST /auth/signin - User login');
   try {
     const { status, data } = await request('/auth/signin', 'POST', {
-      login: testUserCredentials.email,
+      email: testUserCredentials.email,
       password: testUserCredentials.password
     });
     
@@ -279,7 +279,7 @@ async function testSigninInvalidCredentials() {
   logTest('POST /auth/signin - Invalid credentials (should return 401)');
   try {
     const { status, data } = await request('/auth/signin', 'POST', {
-      login: testUserCredentials.email,
+      email: testUserCredentials.email,
       password: 'wrongpassword'
     });
     

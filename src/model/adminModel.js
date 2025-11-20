@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { ROLES, PERMISSIONS } from '../constants/roles.js';
 
 dotenv.config();
 
@@ -23,8 +24,8 @@ export const getAdminProfile = () => {
     return {
         id: 'admin',
         email: adminEmail,
-        role: 'admin',
-        permissions: ['read', 'write', 'delete', 'manage_users'],
+        role: ROLES.ADMIN,
+        permissions: [PERMISSIONS.READ, PERMISSIONS.WRITE, PERMISSIONS.DELETE, PERMISSIONS.MANAGE_USERS],
         created_at: new Date().toISOString()
     };
 };

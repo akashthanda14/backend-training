@@ -53,17 +53,17 @@ export async function signup(req,res){
 
 export async function signin(req,res){
     try{
-        const {login , password} = req.body;
+        const {email, password} = req.body;
 
-        if(!login || !password){
+        if(!email || !password){
             return res.status(400).json({
                 success:false,
-                error:"Email and Password is Required"
+                error:"Email and Password are Required"
             });
         }
 
         const result = await authService.loginUser({
-            login,
+            email,
             password
         })
 

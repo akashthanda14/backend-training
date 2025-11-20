@@ -44,16 +44,16 @@ GET {{baseUrl}}/admin/system/status
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBjb21wYW55LmNvbSIsInJvbGUiOiJhZG1pbiIsInR5cGUiOiJhZG1pbiIsImlhdCI6MTc2MzU2ODM5MywiZXhwIjoxNzYzNjU0NzkzLCJpc3MiOiJhZG1pbi1hdXRoLXNlcnZpY2UifQ.TkHb-qCHR5EWOKvGsX5sOtdMV-DXnGzFoqrXEjMwECg
 
 ### =====================================================
-### USER AUTHENTICATION
+### USER AUTHENTICATION (Role defaults to 'user')
 ### =====================================================
 
-### User Signup
+### User Signup (Automatically assigns 'user' role)
 POST {{baseUrl}}/auth/signup
 Content-Type: application/json
 
 {
-  "username": "testuser",
-  "email": "testuser@example.com",
+  "username": "testuser2",
+  "email": "testuser2@example.com",
   "password": "TestPassword123!"
 }
 
@@ -63,11 +63,11 @@ Content-Type: application/json
 
 {
   "username": "testuser2",
-  "email": "testuser@example.com",
+  "email": "testuser@example.com", 
   "password": "TestPassword123!"
 }
 
-### User Signin
+### User Signin (Returns user with role information)
 POST {{baseUrl}}/auth/signin
 Content-Type: application/json
 
@@ -85,22 +85,22 @@ Content-Type: application/json
   "password": "wrongpassword"
 }
 
-### User Profile (Replace TOKEN with actual token from signin response)
+### User Profile (Shows user role)
 GET {{baseUrl}}/auth/profile
 Authorization: Bearer YOUR_USER_TOKEN_HERE
 
 ### =====================================================
-### USER MANAGEMENT (ADMIN ONLY)
+### USER MANAGEMENT (ADMIN ONLY) - Now supports role management
 ### =====================================================
 
-### Get All Users (Admin Only)
+### Get All Users (Admin Only) - Shows all users with roles
 GET {{baseUrl}}/users
 Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
 
 ### Get All Users - No Admin Token (Should Fail)
 GET {{baseUrl}}/users
 
-### Get User By ID (Admin Only)
+### Get User By ID (Admin Only) - Shows user with role
 GET {{baseUrl}}/users/1
 Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
 
@@ -108,7 +108,7 @@ Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
 GET {{baseUrl}}/users/999
 Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
 
-### Create New User (Admin Only)
+### Create New User as 'user' (Admin Only)
 POST {{baseUrl}}/users
 Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
 Content-Type: application/json
@@ -116,16 +116,42 @@ Content-Type: application/json
 {
   "username": "newuser",
   "email": "newuser@example.com",
-  "password": "NewUserPassword123!"
+  "password": "NewUserPassword123!",
+  "role": "user"
 }
 
-### Create User - Missing Fields (Admin Only)
+### Create New Admin User (Admin Only)
 POST {{baseUrl}}/users
 Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
 Content-Type: application/json
 
 {
-  "username": "incomplete"
+  "username": "newadmin",
+  "email": "newadmin@example.com",
+  "password": "AdminPassword123!",
+  "role": "admin"
+}
+
+### Create User - Invalid Role (Admin Only)
+POST {{baseUrl}}/users
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "username": "invalidrole",
+  "email": "invalid@example.com",
+  "password": "Password123!",
+  "role": "superuser"
+}
+
+### Create User - Missing Password (Admin Only)
+POST {{baseUrl}}/users
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "username": "incomplete",
+  "email": "incomplete@example.com"
 }
 
 ### Create User - No Admin Token (Should Fail)
@@ -135,17 +161,28 @@ Content-Type: application/json
 {
   "username": "unauthorized",
   "email": "unauthorized@example.com",
-  "password": "Password123!"
+  "password": "Password123!",
+  "role": "user"
 }
 
-### Update User (Admin Only) - Replace :id with actual user ID
+### Update User Role (Admin Only) - Promote user to admin
 PUT {{baseUrl}}/users/1
 Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
 Content-Type: application/json
 
 {
   "username": "updateduser",
-  "email": "updated@example.com"
+  "email": "updated@example.com",
+  "role": "admin"
+}
+
+### Update User - Demote admin to user (Admin Only)
+PUT {{baseUrl}}/users/2
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "role": "user"
 }
 
 ### Update User - Invalid ID (Admin Only)
@@ -177,6 +214,27 @@ Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
 DELETE {{baseUrl}}/users/1
 
 ### =====================================================
+### ROLE-BASED TESTING
+### =====================================================
+
+### Test Seeded Admin User from Database
+POST {{baseUrl}}/auth/signin
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "password123"
+}
+
+### Check Admin User Profile (Should show role: 'admin')
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer YOUR_DB_ADMIN_TOKEN_HERE
+
+### Test Regular User Role (Should show role: 'user')
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer YOUR_USER_TOKEN_HERE
+
+### =====================================================
 ### ERROR TESTING
 ### =====================================================
 
@@ -197,23 +255,34 @@ Content-Type: application/json
 }
 
 ### =====================================================
-### TESTING INSTRUCTIONS
+### TESTING INSTRUCTIONS - UPDATED FOR ROLE SYSTEM
 ### =====================================================
 
 ###
-### 1. Start your server: node src/server.js
-### 2. Make sure your .env file has the correct admin credentials
-### 3. First, test the admin login to get an admin token
-### 4. Copy the token from the admin login response
-### 5. Replace "YOUR_ADMIN_TOKEN_HERE" with the actual token
-### 6. Test user signup/signin to get user tokens
-### 7. Replace "YOUR_USER_TOKEN_HERE" with actual user tokens
-### 8. Run each test and verify the responses
+### ROLE SYSTEM OVERVIEW:
+### 1. Environment Admin: Uses .env credentials (admin@company.com / AdminPassword123!)
+### 2. Database Users: Stored in users table with 'user' or 'admin' role
+### 3. Signup: Always creates 'user' role (secure default)
+### 4. Admin User Management: Can create users with any role
+###
+### TESTING STEPS:
+### 1. Start database: docker-compose up -d
+### 2. Start server: node src/server.js
+### 3. Test Environment Admin Login (/admin/login)
+### 4. Test Database User Login (/auth/signin with admin@example.com)
+### 5. Test Regular User Signup (gets 'user' role automatically)
+### 6. Test Admin User Management (create/update roles)
+###
+### Expected Role Behavior:
+### - Signup: Creates 'user' role only
+### - Signin: Returns user's stored role
+### - Admin endpoints: Use environment credentials
+### - User management: Admin-only, supports role assignment
 ###
 ### Expected Responses:
 ### - 200: Success
 ### - 201: Created (for signup, user creation)
-### - 400: Bad Request (missing fields, validation errors)
+### - 400: Bad Request (missing fields, validation errors, invalid roles)
 ### - 401: Unauthorized (wrong credentials, missing tokens)
 ### - 403: Forbidden (invalid/expired tokens)
 ### - 404: Not Found (invalid user IDs)
@@ -221,24 +290,23 @@ Content-Type: application/json
 ###
 
 ### =====================================================
-### SAMPLE WORKFLOW
+### UPDATED SAMPLE WORKFLOW
 ### =====================================================
 
-### Step 1: Admin Login (Copy token from response)
-# POST {{baseUrl}}/admin/login
+### Step 1: Environment Admin Authentication
+# POST {{baseUrl}}/admin/login (admin@company.com)
 
-### Step 2: Test Admin-Protected Endpoints
-# GET {{baseUrl}}/admin/profile (with admin token)
-# GET {{baseUrl}}/users (with admin token)
+### Step 2: Database Admin Authentication  
+# POST {{baseUrl}}/auth/signin (admin@example.com / password123)
 
-### Step 3: User Authentication
-# POST {{baseUrl}}/auth/signup (create new user)
-# POST {{baseUrl}}/auth/signin (login user, copy token)
+### Step 3: Regular User Signup
+# POST {{baseUrl}}/auth/signup (gets 'user' role automatically)
 
-### Step 4: Test User-Protected Endpoints  
-# GET {{baseUrl}}/auth/profile (with user token)
+### Step 4: Test Role Information
+# GET {{baseUrl}}/auth/profile (check user role)
+# GET {{baseUrl}}/admin/profile (check admin profile)
 
-### Step 5: Test Admin User Management
-# POST {{baseUrl}}/users (create user as admin)
-# PUT {{baseUrl}}/users/ID (update user as admin)
-# DELETE {{baseUrl}}/users/ID (delete user as admin)
+### Step 5: Admin Role Management
+# POST {{baseUrl}}/users (create admin users)
+# PUT {{baseUrl}}/users/ID (change user roles)
+# GET {{baseUrl}}/users (view all users with roles)
