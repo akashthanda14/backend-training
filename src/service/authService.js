@@ -1,157 +1,126 @@
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import * as authModel from '../model/authModel.js';
+import { createUser, getUserByEmail, getUserByUsername } from '../model/authModel.js';
+import { sendEmailVerificationOTP } from './otpService.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/**
- * Register a new user
- */
-async function registerUser(userData) {
-  try {
-    const { username, email, password } = userData;
-
-    // Validate required fields
-    if (!username || !email || !password) {
-      throw new Error('Username, email, and password are required');
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      throw new Error('Invalid email format');
-    }
-
-    // Validate username (alphanumeric and underscore only)
-    const usernameRegex = /^[a-zA-Z0-9_]+$/;
-    if (!usernameRegex.test(username)) {
-      throw new Error('Username can only contain letters, numbers, and underscores');
-    }
-
-    // Validate password strength
-    if (password.length < 6) {
-      throw new Error('Password must be at least 6 characters long');
-    }
-
-    // Check if user already exists
-    const userExists = await authModel.checkUserExists(email, username);
-    if (userExists) {
-      throw new Error('User with this email or username already exists');
-    }
-
-    // Hash password
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Create user
-    const userId = await authModel.createUser(username, email, hashedPassword);
-
-    // Get the created user (without password)
-    const newUser = await authModel.getUserById(userId);
-
-    // Generate JWT token
-    const token = generateToken(userId);
-
-    return {
-      user: newUser,
-      token
-    };
-  } catch (error) {
-    console.error('Service error registering user:', error.message);
-    throw error;
-  }
-}
-
-/**
- * Login user
- */
-async function loginUser(credentials) {
-  try {
-    const { email, password } = credentials;
-
-    // Validate required fields
-    if (!email || !password) {
-      throw new Error('Email and password are required');
-    }
-
-    // Find user by email or username
-    let user = await authModel.getUserByEmail(email);
-    if (!user) {
-      user = await authModel.getUserByUsername(email);
-    }
-
-    if (!user) {
-      throw new Error('Invalid credentials');
-    }
-
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
-      throw new Error('Invalid credentials');
-    }
-
-    // Generate JWT token
-    const token = generateToken(user.id);
-
-
-    // Remove password from user object for security (don't send password back to client)
-    // This creates a new object with all user fields except the password
-    const userWithoutPassword = {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-      created_at: user.created_at
-    };
-
-    return {
-      user: userWithoutPassword,
-      token
-    };
-  } catch (error) {
-    console.error('Service error logging in user:', error.message);
-    throw error;
-  }
-}
-
-/**
- * Verify JWT token
- */
-async function verifyToken(token) {
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await authModel.getUserById(decoded.userId);
-    
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    return user;
-  } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
-      throw new Error('Invalid token');
-    } else if (error.name === 'TokenExpiredError') {
-      throw new Error('Token expired');
-    }
-    throw error;
-  }
-}
-
-/**
- * Generate JWT token
- */
 function generateToken(userId) {
-  return jwt.sign(
-    { userId },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
-  );
+    return jwt.sign(
+        { id: userId, type: 'user' },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN }
+    );
 }
 
-export default {
-  registerUser,
-  loginUser,
-  verifyToken,
-  generateToken
-};
+export async function registerUser(userData) {
+    try {
+        const { username, email, password } = userData;
+
+        // Validate all required fields
+        if (!username || !email || !password) {
+            throw new Error('Username, email, and password are required');
+        }
+
+        if (!emailRegex.test(email)) {
+            throw new Error('Invalid email format');
+        }
+
+        if (username.length < 3) {
+            throw new Error('Username must be at least 3 characters long');
+        }
+
+        if (password.length < 6) {
+            throw new Error('Password must be at least 6 characters long');
+        }
+
+        // Check for existing users
+        const existingUserByEmail = await getUserByEmail(email);
+        if (existingUserByEmail) {
+            throw new Error('User with this email already exists');
+        }
+
+        const existingUserByUsername = await getUserByUsername(username);
+        if (existingUserByUsername) {
+            throw new Error('User with this username already exists');
+        }
+
+        // Hash password
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+        // Create user with all required fields
+        const newUser = await createUser({
+            username: username.trim(),
+            email: email.trim().toLowerCase(),
+            password: hashedPassword,
+            role: 'user'
+        });
+
+        // Send verification email
+        try {
+            await sendEmailVerificationOTP(email.trim().toLowerCase());
+            console.log(`✅ Verification email sent to: ${email}`);
+        } catch (emailError) {
+            console.error('Failed to send verification email:', emailError);
+            // Don't fail registration if email fails
+        }
+
+        // Remove password from response
+        const { password: _, ...userWithoutPassword } = newUser;
+
+        return {
+            user: userWithoutPassword,
+            message: 'User registered successfully. Please check your email for verification.'
+        };
+
+    } catch (error) {
+        console.error('Service error registering user:', error.message);
+        throw error;
+    }
+}
+
+export async function loginUser(credentials) {
+    try {
+        const { email, password } = credentials;
+
+        if (!email || !password) {
+            throw new Error('Email and password are required');
+        }
+
+        const user = await getUserByEmail(email.trim().toLowerCase());
+
+        if (!user) {
+            throw new Error('Invalid credentials');
+        }
+
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        if (!isValidPassword) {
+            throw new Error('Invalid credentials');
+        }
+
+        // Check if email is verified
+        if (!user.email_verified) {
+            return {
+                requiresVerification: true,
+                email: user.email,
+                message: 'Please verify your email before logging in. Check your email for verification code.'
+            };
+        }
+
+        const token = generateToken(user.id);
+
+        // Remove password from response
+        const { password: _, ...userWithoutPassword } = user;
+
+        return {
+            token,
+            user: userWithoutPassword,
+            message: 'Login successful'
+        };
+
+    } catch (error) {
+        console.error('Service error logging in user:', error.message);
+        throw error;
+    }
+}

@@ -1,19 +1,21 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { query } from './db/db.js';
+
 import usersRouter from './routes/userRoutes.js';
 import authRouter from './routes/authRoutes.js';
 import adminRouter from './routes/adminRoutes.js';
-import { query } from './db/db.js';
+import otpRouter from './routes/otpRoutes.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors()); // this is to tell backend that which is your frontend to whom i will connect
-app.use(express.json());  // parse json data
-app.use(express.urlencoded({ extended: true })); // form data
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.get('/health', async (req, res) => {
   try {
@@ -24,9 +26,10 @@ app.get('/health', async (req, res) => {
   }
 });
 
-app.use('/users', usersRouter); //. http://localhost:3000/users
-app.use('/auth', authRouter); // http://localhost:3000/auth
-app.use('/admin', adminRouter); // http://localhost:3000/admin
+app.use('/users', usersRouter);
+app.use('/auth', authRouter);
+app.use('/admin', adminRouter);
+app.use('/otp', otpRouter);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
