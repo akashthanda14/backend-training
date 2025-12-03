@@ -117,3 +117,57 @@ export const testEmailConnection = async () => {
         return { success: false, error: error.message };
     }
 };
+
+/**
+ * Send Password Reset Email
+ * 
+ * Sends an email with OTP for password reset
+ * 
+ * @param {string} email - User's email address
+ * @param {string} otp - OTP code for password reset
+ * @returns {Promise<Object>} - Result with success status
+ */
+export const sendPasswordResetEmail = async (email, otp) => {
+    try {
+        const transporter = createTransporter();
+        const appName = process.env.EMAIL_FROM_NAME || 'Aschik Project';
+        
+        const subject = 'Password Reset - OTP Code';
+        const html = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #dc3545;">Password Reset Request</h2>
+                <p>Hello,</p>
+                <p>We received a request to reset your password for ${appName}.</p>
+                <p>Your password reset verification code is:</p>
+                <div style="background: #f8f9fa; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
+                    <h1 style="color: #dc3545; font-size: 32px; margin: 0; letter-spacing: 5px;">${otp}</h1>
+                </div>
+                <p>This code will expire in ${process.env.OTP_EXPIRES_IN || 10} minutes.</p>
+                <p><strong>Important:</strong> If you didn't request a password reset, please ignore this email and your password will remain unchanged.</p>
+                <p>For security reasons, never share this code with anyone.</p>
+                <hr style="margin: 30px 0;">
+                <p style="color: #666; font-size: 12px;">
+                    This is an automated message, please do not reply to this email.
+                </p>
+            </div>
+        `;
+
+        const fromEmail = process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_FROM || process.env.EMAIL_USER || process.env.SMTP_USER;
+        const fromName = process.env.EMAIL_FROM_NAME || 'Aschik Project';
+
+        const mailOptions = {
+            from: `"${fromName}" <${fromEmail}>`,
+            to: email,
+            subject: subject,
+            html: html
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log('✅ Password reset email sent successfully:', info.messageId);
+        return { success: true, messageId: info.messageId };
+        
+    } catch (error) {
+        console.error('❌ Password reset email error:', error);
+        throw new Error('Failed to send password reset email: ' + error.message);
+    }
+};

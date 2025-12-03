@@ -39,3 +39,23 @@ export const getUserByUsername = async (username) => {
     const result = await query(sql, [username]);
     return result[0];
 };
+
+/**
+ * Update User Password
+ * 
+ * Updates a user's password in the database
+ * 
+ * @param {string} email - User's email address
+ * @param {string} hashedPassword - New hashed password
+ * @returns {Promise<boolean>} - Success status
+ */
+export const updatePassword = async (email, hashedPassword) => {
+    if (!email || !hashedPassword) {
+        throw new Error('Email and hashed password are required');
+    }
+    
+    const sql = 'UPDATE users SET password = ? WHERE email = ?';
+    const result = await query(sql, [hashedPassword, email]);
+    
+    return result.affectedRows > 0;
+};

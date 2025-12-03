@@ -1,4 +1,4 @@
-import { registerUser, loginUser } from "../service/authService.js";
+import { registerUser, loginUser, forgotPassword, resetPassword } from "../service/authService.js";
 
 export async function signup(req, res) {
     try {
@@ -135,6 +135,114 @@ export async function getProfile(req, res) {
         res.status(500).json({
             success: false,
             error: "Internal server error"
+        });
+    }
+}
+
+/**
+ * Forgot Password Controller
+ * 
+ * Initiates password reset by sending OTP to user's email
+ * POST /auth/forgot-password
+ * 
+ * @param {Object} req - Request object with email in body
+ * @param {Object} res - Response object
+ */
+export async function forgotPasswordController(req, res) {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                error: "Email is required"
+            });
+        }
+
+        const result = await forgotPassword(email);
+
+        res.status(200).json({
+            success: true,
+            message: result.message
+        });
+
+    } catch (error) {
+        console.error('Error in forgot password:', error);
+
+        if (error.message.includes('Invalid email')) {
+            return res.status(400).json({
+                success: false,
+                error: error.message
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            error: "Failed to process forgot password request",
+            message: error.message
+        });
+    }
+}
+
+/**
+ * Reset Password Controller
+ * 
+ * Resets user password using OTP verification
+ * POST /auth/reset-password
+ * 
+ * @param {Object} req - Request object with email, otp, and newPassword in body
+ * @param {Object} res - Response object
+ */
+export async function resetPasswordController(req, res) {
+    try {
+        const { email, otp, newPassword } = req.body;
+
+        if (!email || !otp || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                error: "Email, OTP, and new password are required"
+            });
+        }
+
+        const result = await resetPassword({
+            email,
+            otp,
+            newPassword
+        });
+
+        res.status(200).json({
+            success: true,
+            message: result.message
+        });
+
+    } catch (error) {
+        console.error('Error in reset password:', error);
+
+        if (error.message.includes('Invalid') || error.message.includes('expired')) {
+            return res.status(400).json({
+                success: false,
+                error: error.message
+            });
+        }
+
+        if (error.message.includes('User not found')) {
+            return res.status(404).json({
+                success: false,
+                error: error.message
+            });
+        }
+
+        if (error.message.includes('Password must be')) {
+            return res.status(400).json({
+                success: false,
+                error: error.message
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            error: "Failed to reset password",
+            message: error.message
         });
     }
 }

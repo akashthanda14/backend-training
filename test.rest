@@ -17,6 +17,42 @@
 GET {{baseUrl}}/health
 
 ### ============================================
+### RATE LIMITING TESTS
+### ============================================
+### NOTE: These endpoints have rate limits to prevent abuse:
+### - Login: 5 attempts per 15 minutes
+### - Signup: 3 attempts per hour
+### - OTP: 3 requests per 15 minutes
+### Run these requests multiple times to test rate limiting
+
+### Test Login Rate Limit (Try 6 times quickly)
+POST {{baseUrl}}/auth/signin
+Content-Type: application/json
+
+{
+  "email": "wrong@example.com",
+  "password": "wrongpassword"
+}
+
+### Test Signup Rate Limit (Try 4 times quickly)
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "username": "ratelimituser",
+  "email": "ratelimit@example.com",
+  "password": "password123"
+}
+
+### Test OTP Rate Limit (Try 4 times quickly)
+POST {{baseUrl}}/otp/send-verification
+Content-Type: application/json
+
+{
+  "email": "{{testEmail}}"
+}
+
+### ============================================
 ### EMAIL VERIFICATION SYSTEM
 ### ============================================
 
@@ -62,6 +98,80 @@ Content-Type: application/json
 ### 6. Sign In After Verification (Should succeed)
 POST {{baseUrl}}/auth/signin
 Content-Type: application/json
+
+{
+  "email": "{{testEmail}}",
+  "password": "{{testPassword}}"
+}
+
+### ============================================
+### FORGOT PASSWORD / PASSWORD RESET FLOW
+### ============================================
+
+### 1. Request Password Reset (Sends OTP to email)
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "{{testEmail}}"
+}
+
+### 2. Reset Password with OTP
+POST {{baseUrl}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "{{testEmail}}",
+  "otp": "123456",
+  "newPassword": "newpassword123"
+}
+
+### 3. Login with New Password
+POST {{baseUrl}}/auth/signin
+Content-Type: application/json
+
+{
+  "email": "{{testEmail}}",
+  "password": "newpassword123"
+}
+
+### Test: Request Password Reset for Non-existent User (Should still return success for security)
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "nonexistent@example.com"
+}
+
+### Test: Reset Password with Invalid OTP (Should fail)
+POST {{baseUrl}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "{{testEmail}}",
+  "otp": "000000",
+  "newPassword": "newpassword123"
+}
+
+### Test: Reset Password with Expired OTP (Wait 10+ minutes, then try)
+POST {{baseUrl}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "{{testEmail}}",
+  "otp": "123456",
+  "newPassword": "newpassword123"
+}
+
+### Test: Reset Password with Weak Password (Should fail)
+POST {{baseUrl}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "{{testEmail}}",
+  "otp": "123456",
+  "newPassword": "123"
+}
 
 {
   "email": "{{testEmail}}",
@@ -192,6 +302,208 @@ Content-Type: application/json
   "email": "jane.smith@example.com",
   "password": "temp_password"
 }
+
+### ============================================
+### IMAGE UPLOAD ENDPOINTS
+### ============================================
+### NOTE: These endpoints require authentication (user or admin token)
+### Use multipart/form-data for file uploads
+### Supported formats: JPEG, JPG, PNG, GIF, WebP
+### Max file size: 5MB per file
+
+### Test Cloudinary Connection (Authentication required)
+GET {{baseUrl}}/upload/cloudinary/test
+Authorization: Bearer {{userToken}}
+
+### Get Upload Statistics (Admin only)
+GET {{baseUrl}}/upload/stats
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### LOCAL STORAGE UPLOADS (Multer)
+### ============================================
+
+### Upload Single Image to Local Storage
+### NOTE: Cannot test file uploads in REST Client. Use these for reference:
+### 
+### CURL Example:
+### curl -X POST \
+###   -H "Authorization: Bearer YOUR_USER_TOKEN" \
+###   -F "image=@/path/to/your/image.jpg" \
+###   http://localhost:3000/upload/local
+### 
+### HTML Form Example:
+### <form action="http://localhost:3000/upload/local" method="POST" enctype="multipart/form-data">
+###   <input type="file" name="image" accept="image/*" required>
+###   <input type="hidden" name="Authorization" value="Bearer YOUR_TOKEN">
+###   <button type="submit">Upload to Local</button>
+### </form>
+
+POST {{baseUrl}}/upload/local
+Authorization: Bearer {{userToken}}
+Content-Type: multipart/form-data
+# Field name: image
+# Max size: 5MB
+# NOTE: Use a tool like Postman or CURL for actual file uploads
+
+### Upload Multiple Images to Local Storage
+POST {{baseUrl}}/upload/local/multiple
+Authorization: Bearer {{userToken}}
+Content-Type: multipart/form-data
+# Field name: images
+# Max files: 5
+# Max size: 5MB each
+
+### Delete Image from Local Storage
+DELETE {{baseUrl}}/upload/local/image-1234567890-123456789.jpg
+Authorization: Bearer {{userToken}}
+
+### ============================================
+### CLOUDINARY UPLOADS (Cloud Storage)
+### ============================================
+
+### Upload Single Image to Cloudinary
+### CURL Example:
+### curl -X POST \
+###   -H "Authorization: Bearer YOUR_USER_TOKEN" \
+###   -F "image=@/path/to/your/image.jpg" \
+###   http://localhost:3000/upload/cloudinary
+
+POST {{baseUrl}}/upload/cloudinary
+Authorization: Bearer {{userToken}}
+Content-Type: multipart/form-data
+# Field name: image
+# Max size: 5MB
+# Features: Auto-optimization, transformations, secure URLs
+
+### Upload Multiple Images to Cloudinary
+POST {{baseUrl}}/upload/cloudinary/multiple
+Authorization: Bearer {{userToken}}
+Content-Type: multipart/form-data
+# Field name: images
+# Max files: 5
+# Max size: 5MB each
+
+### Delete Image from Cloudinary
+### NOTE: Replace 'PUBLIC_ID_HERE' with actual Cloudinary public_id (URL encoded)
+### Example public_id: aschik-project/uploads/1234567890-image
+### URL encoded: aschik-project%2Fuploads%2F1234567890-image
+DELETE {{baseUrl}}/upload/cloudinary/aschik-project%2Fuploads%2F1234567890-image
+Authorization: Bearer {{userToken}}
+
+### ============================================
+### JAVASCRIPT/FRONTEND UPLOAD EXAMPLES
+### ============================================
+
+### Single File Upload with JavaScript:
+### ```javascript
+### const fileInput = document.getElementById('fileInput');
+### const formData = new FormData();
+### formData.append('image', fileInput.files[0]);
+### 
+### fetch('/upload/cloudinary', {
+###   method: 'POST',
+###   headers: {
+###     'Authorization': 'Bearer ' + userToken
+###   },
+###   body: formData
+### })
+### .then(response => response.json())
+### .then(data => {
+###   if (data.success) {
+###     console.log('Upload successful:', data.data.cloudinary.url);
+###   } else {
+###     console.error('Upload failed:', data.error);
+###   }
+### });
+### ```
+
+### Multiple Files Upload with JavaScript:
+### ```javascript
+### const filesInput = document.getElementById('filesInput');
+### const formData = new FormData();
+### 
+### for (let i = 0; i < filesInput.files.length; i++) {
+###   formData.append('images', filesInput.files[i]);
+### }
+### 
+### fetch('/upload/local/multiple', {
+###   method: 'POST',
+###   headers: {
+###     'Authorization': 'Bearer ' + userToken
+###   },
+###   body: formData
+### })
+### .then(response => response.json())
+### .then(data => {
+###   console.log(`${data.data.count} files uploaded successfully`);
+### });
+### ```
+
+### ============================================
+### UPLOAD TESTING CHECKLIST
+### ============================================
+
+### ✅ Test Authentication
+### GET /upload/cloudinary/test - Should work with valid token
+### GET /upload/stats - Should work with admin token only
+
+### ✅ Test File Type Validation
+### Try uploading non-image files (should fail)
+### Try uploading unsupported image formats (should fail)
+
+### ✅ Test File Size Limits
+### Try uploading files > 5MB (should fail)
+
+### ✅ Test Multiple Files
+### Try uploading > 5 files at once (should fail)
+
+### ✅ Test Missing Fields
+### Try uploading without 'image' or 'images' field name (should fail)
+
+### ✅ Test Deletion
+### Upload file, then delete with returned filename/public_id
+
+### ✅ Test Static File Access
+### Upload to local storage, then access via:
+### http://localhost:3000/uploads/images/filename.jpg
+
+### Expected Upload Response Format:
+### ```json
+### {
+###   "success": true,
+###   "message": "Image uploaded successfully",
+###   "data": {
+###     "filename": "image-1234567890-123456789.jpg",
+###     "originalName": "photo.jpg",
+###     "mimetype": "image/jpeg",
+###     "size": 150432,
+###     "url": "http://localhost:3000/uploads/images/image-1234567890-123456789.jpg",
+###     "uploadedAt": "2025-12-02T10:30:00.000Z",
+###     "storage": "local"
+###   }
+### }
+### ```
+
+### Expected Cloudinary Response Format:
+### ```json
+### {
+###   "success": true,
+###   "message": "Image uploaded successfully to Cloudinary",
+###   "data": {
+###     "cloudinary": {
+###       "public_id": "aschik-project/uploads/1234567890-photo",
+###       "url": "https://res.cloudinary.com/dumurymxf/image/upload/...",
+###       "width": 1200,
+###       "height": 800,
+###       "format": "jpg",
+###       "bytes": 150432
+###     },
+###     "uploadedAt": "2025-12-02T10:30:00.000Z",
+###     "storage": "cloudinary"
+###   }
+### }
+### ```
 
 ### ============================================
 ### TESTING WORKFLOW INSTRUCTIONS

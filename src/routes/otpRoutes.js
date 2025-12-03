@@ -4,6 +4,7 @@ import {
     verifyEmail,
     checkVerificationStatus
 } from '../controller/otpController.js';
+import { otpLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 

@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { createUser, getUserByEmail, getUserByUsername } from '../model/authModel.js';
-import { sendEmailVerificationOTP } from './otpService.js';
+import { createUser, getUserByEmail, getUserByUsername, updatePassword } from '../model/authModel.js';
+import { sendEmailVerificationOTP, sendPasswordResetOTP, verifyPasswordResetOTP } from './otpService.js';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -121,6 +121,114 @@ export async function loginUser(credentials) {
 
     } catch (error) {
         console.error('Service error logging in user:', error.message);
+        throw error;
+    }
+}
+
+/**
+ * Forgot Password Service
+ * 
+ * Initiates the password reset process by sending an OTP to the user's email
+ * 
+ * @param {string} email - User's email address
+ * @returns {Promise<Object>} - Result with success status
+ */
+export async function forgotPassword(email) {
+    try {
+        if (!email) {
+            throw new Error('Email is required');
+        }
+
+        if (!emailRegex.test(email)) {
+            throw new Error('Invalid email format');
+        }
+
+        console.log('🔍 Forgot password requested for:', email);
+
+        // Check if user exists
+        const user = await getUserByEmail(email.trim().toLowerCase());
+        
+        if (!user) {
+            // For security, don't reveal if user exists or not
+            // Return success anyway
+            console.log('⚠️ User not found for email:', email);
+            return {
+                success: true,
+                message: 'If an account with this email exists, a password reset code has been sent.'
+            };
+        }
+
+        console.log('✅ User found:', user.email, '- Sending OTP...');
+
+        // Send password reset OTP
+        await sendPasswordResetOTP(email.trim().toLowerCase());
+
+        console.log('✅ Password reset OTP sent successfully to:', email);
+
+        return {
+            success: true,
+            message: 'Password reset code sent to your email. Please check your inbox.'
+        };
+
+    } catch (error) {
+        console.error('Service error in forgot password:', error.message);
+        throw error;
+    }
+}
+
+/**
+ * Reset Password Service
+ * 
+ * Resets the user's password after verifying the OTP
+ * 
+ * @param {Object} resetData - Object containing email, otp, and newPassword
+ * @returns {Promise<Object>} - Result with success status
+ */
+export async function resetPassword(resetData) {
+    try {
+        const { email, otp, newPassword } = resetData;
+
+        // Validate inputs
+        if (!email || !otp || !newPassword) {
+            throw new Error('Email, OTP, and new password are required');
+        }
+
+        if (!emailRegex.test(email)) {
+            throw new Error('Invalid email format');
+        }
+
+        if (newPassword.length < 6) {
+            throw new Error('Password must be at least 6 characters long');
+        }
+
+        // Check if user exists
+        const user = await getUserByEmail(email.trim().toLowerCase());
+        
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // Verify OTP
+        await verifyPasswordResetOTP(email.trim().toLowerCase(), otp);
+
+        // Hash new password
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+        // Update password in database
+        const updated = await updatePassword(email.trim().toLowerCase(), hashedPassword);
+
+        if (!updated) {
+            throw new Error('Failed to update password');
+        }
+
+        return {
+            success: true,
+            message: 'Password reset successfully. You can now login with your new password.'
+        };
+
+    } catch (error) {
+        console.error('Service error in reset password:', error.message);
         throw error;
     }
 }

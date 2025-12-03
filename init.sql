@@ -20,12 +20,12 @@ CREATE TABLE users (
   INDEX idx_role (role)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- OTP table for email verification only
+-- OTP table for email verification and password reset
 CREATE TABLE otps (
   id INT AUTO_INCREMENT PRIMARY KEY,
   email VARCHAR(100) NOT NULL,
   otp_code VARCHAR(10) NOT NULL,
-  otp_type ENUM('email_verification') NOT NULL DEFAULT 'email_verification',
+  otp_type ENUM('email_verification', 'password_reset') NOT NULL DEFAULT 'email_verification',
   expires_at TIMESTAMP NOT NULL,
   used BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
