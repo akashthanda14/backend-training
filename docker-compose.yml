@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   db:
     image: mysql:8
@@ -17,6 +19,69 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s
       retries: 10
+
+  app:
+    build: .
+    container_name: nodejs_backend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      # Node Environment
+      - NODE_ENV=development
+      
+      # Database Configuration
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=myapp_db
+      - DB_USER=appuser
+      - DB_PASSWORD=userpassword123
+      
+      # JWT Configuration
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - JWT_EXPIRES_IN=24h
+      
+      # Admin Configuration
+      - ADMIN_EMAIL=admin@company.com
+      - ADMIN_PASSWORD=AdminPassword123!
+      
+      # Application Port
+      - PORT=3000
+      
+      # Email Configuration
+      - EMAIL_HOST=smtp.gmail.com
+      - EMAIL_PORT=587
+      - EMAIL_SECURE=false
+      - EMAIL_USER=akashthanda14@gmail.com
+      - EMAIL_PASSWORD=vkquasewbuacdyyn
+      - EMAIL_FROM_NAME=Aschik Project
+      - EMAIL_FROM_ADDRESS=akashthanda14@gmail.com
+      
+      # Legacy SMTP variables (for backward compatibility)
+      - SMTP_FROM=akashthanda14@gmail.com
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PASS=vkquasewbuacdyyn
+      - SMTP_PORT=587
+      - SMTP_USER=akashthanda14@gmail.com
+      
+      # OTP Configuration
+      - OTP_EXPIRES_IN=10
+      - OTP_LENGTH=6
+      
+      # Frontend URL (for password reset links)
+      - FRONTEND_URL=http://localhost:5173
+      
+      # Cloudinary Configuration
+      - CLOUDINARY_NAME=dumurymxf
+      - CLOUDINARY_API_KEY=124497175293455
+      - CLOUDINARY_SECRET_KEY=8o1poyk1rM_nCsJ7LUFPOjK_tvE
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./uploads:/app/uploads
 
 volumes:
   mysql_data:

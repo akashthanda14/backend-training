@@ -27,7 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-app.get('/health', async (req, res) => {
+app.get('/', async (req, res) => {
   try {
     await query('SELECT 1');
     res.json({ status: 'ok', db: 'connected' });
